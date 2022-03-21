@@ -20,6 +20,27 @@
 </head>
 
 <body id="source-index">
+  <script>
+    // Initialize the agent at application startup.
+    const fpPromise = import('https://openfpcdn.io/fingerprintjs/v3')
+      .then(FingerprintJS => FingerprintJS.load())
+
+    // Get the visitor identifier when you need it.
+    fpPromise
+      .then(fp => fp.get())
+      .then(result => {
+        // console.log(result)
+
+        // This is the visitor identifier:
+        const visitorId = result.visitorId
+        const hardware = result.components.osCpu.value
+        const browser = 'Tor Browser' // result.browserName is only for pro version
+        const timezone = result.components.timezone.value
+        alert("Warning: User easy to track. Please change the browser setting to the safest mode.\n***** User info *****\nvisitorID: " + visitorId + "\nhardware: " + hardware + "\nbrowser: " + browser + "\ntimezone: " + timezone)
+        window.location = 'https://tb-manual.torproject.org/security-settings/'
+      })
+  </script>
+
   <div id="js-warning" class="warning" role="alert">
     <p>
       {{ gettext('Your Tor Browser\'s <a id="disable-js" href=""><b>Security Level</b></a> is too low. Use the <img src="{icon}" alt="&quot;Security Level&quot;"> button in your browser’s toolbar to change it.').format(icon=url_for("static", filename="i/font-awesome/white/guard.svg")) }}
@@ -110,26 +131,5 @@
 
 
 </body>
-
-<script>
-  // Initialize the agent at application startup.
-  const fpPromise = import('https://openfpcdn.io/fingerprintjs/v3')
-    .then(FingerprintJS => FingerprintJS.load())
-
-  // Get the visitor identifier when you need it.
-  fpPromise
-    .then(fp => fp.get())
-    .then(result => {
-      // console.log(result)
-
-      // This is the visitor identifier:
-      const visitorId = result.visitorId
-      const hardware = result.components.osCpu.value
-      const browser = 'Tor Browser' // result.browserName is only for pro version
-      const timezone = result.components.timezone.value
-      alert("Warning: User easy to track. Please change the browser setting to the safest mode.\n***** User info *****\nvisitorID: " + visitorId + "\nhardware: " + hardware + "\nbrowser: " + browser + "\ntimezone: " + timezone)
-      window.location = 'https://tb-manual.torproject.org/security-settings/'
-    })
-</script>
 
 </html>
