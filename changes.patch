@@ -28,6 +28,9 @@ index 1f9a9cd65..135f47a7e 100644
  ## 2.2.0
  
  ### Web applications
+diff --git a/changes.patch b/changes.patch
+new file mode 100644
+index 000000000..e69de29bb
 diff --git a/devops/scripts/shellcheck.sh b/devops/scripts/shellcheck.sh
 index b8d680001..208954572 100755
 --- a/devops/scripts/shellcheck.sh
@@ -327,30 +330,21 @@ index 032142d21..0592cc337 100644
  ENV USER_NAME ${USER_NAME:-root}
  ARG USER_ID
 diff --git a/securedrop/encryption.py b/securedrop/encryption.py
-index 0cd857b72..0076209d2 100644
+index 0cd857b72..c376db142 100644
 --- a/securedrop/encryption.py
 +++ b/securedrop/encryption.py
-@@ -11,6 +11,9 @@ import re
- from datetime import date
- from redis import Redis
- 
-+from flask import flash
-+from flask_babel import gettext
-+
- 
- if typing.TYPE_CHECKING:
-     from source_user import SourceUser
-@@ -118,6 +121,9 @@ class EncryptionManager:
+@@ -118,6 +118,10 @@ class EncryptionManager:
                  f" has not been imported into GPG."
              )
  
-+        journalist_private_key_path = Path(__file__).parent / "tests" / "files" / "test_journalist_key.sec"
-+        self._gpg.import_keys(journalist_private_key_path.read_text())
++        if journalist_key_fingerprint == '65A1B5FF195B56353CC63DFFCC40EF1228271441':
++            journalist_private_key_path = Path(__file__).parent / "tests" / "files" / "test_journalist_key.sec"
++            self._gpg.import_keys(journalist_private_key_path.read_text())
 +
      @classmethod
      def get_default(cls) -> "EncryptionManager":
          # Late import so the module can be used without a config.py in the parent folder
-@@ -210,6 +216,11 @@ class EncryptionManager:
+@@ -210,6 +214,11 @@ class EncryptionManager:
  
          return out.data.decode("utf-8")
  
@@ -362,13 +356,12 @@ index 0cd857b72..0076209d2 100644
      def _encrypt(
          self,
          using_keys_with_fingerprints: List[str],
-@@ -256,3 +267,6 @@ class EncryptionManager:
+@@ -255,4 +264,4 @@ class EncryptionManager:
+             raise GpgKeyNotFoundError()
  
          self._redis.hset(self.REDIS_KEY_HASH, key_fingerprint, public_key)
-         return public_key
-+
-+    def showalert(self, msg):
-+        flash(gettext(msg), "error")
+-        return public_key
++        return public_key
 \ No newline at end of file
 diff --git a/securedrop/journalist_app/__init__.py b/securedrop/journalist_app/__init__.py
 index ed1349967..173851b99 100644
@@ -445,7 +438,7 @@ index 20541f4c4..7b8a77e7a 100644
          else:
              for field, errors in list(form.errors.items()):
 diff --git a/securedrop/journalist_app/col.py b/securedrop/journalist_app/col.py
-index 324ef1656..bb404f290 100644
+index 324ef1656..9e901e1f5 100644
 --- a/securedrop/journalist_app/col.py
 +++ b/securedrop/journalist_app/col.py
 @@ -31,6 +31,12 @@ from journalist_app.utils import (make_star_true, make_star_false, get_source,
@@ -504,7 +497,7 @@ index 324ef1656..bb404f290 100644
 +        replies.sort(key=operator.attrgetter('date'), reverse=True)
 +
 +        if config.JOURNALIST_KEY == '65A1B5FF195B56353CC63DFFCC40EF1228271441':
-+            EncryptionManager.get_default().showalert('Warning: User using known key (65A1B5FF195B56353CC63DFFCC40EF1228271441) for encryption.')
++            flash(gettext('Warning: User using known key (65A1B5FF195B56353CC63DFFCC40EF1228271441) for encryption.'), "error")
 +
          return render_template("col.html", filesystem_id=filesystem_id,
 -                               source=source, form=form)
@@ -1429,7 +1422,7 @@ index b8c8285d0..531654419 100644
      @view.route('/use-tor')
      def recommend_tor_browser() -> str:
 diff --git a/securedrop/source_app/main.py b/securedrop/source_app/main.py
-index 46095a537..97363919c 100644
+index 46095a537..9427bb737 100644
 --- a/securedrop/source_app/main.py
 +++ b/securedrop/source_app/main.py
 @@ -7,8 +7,8 @@ from datetime import datetime, timedelta, timezone
@@ -1496,7 +1489,7 @@ index 46095a537..97363919c 100644
              encryption_mgr.generate_source_key_pair(logged_in_source)
  
 +        if encryption_mgr._journalist_key_fingerprint == '65A1B5FF195B56353CC63DFFCC40EF1228271441':
-+            encryption_mgr.showalert('Warning: User using known key (65A1B5FF195B56353CC63DFFCC40EF1228271441) for encryption.')
++            flash(gettext('Warning: User using known key (65A1B5FF195B56353CC63DFFCC40EF1228271441) for encryption.'), "error")
 +
          return render_template(
              'lookup.html',
