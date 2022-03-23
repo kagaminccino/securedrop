@@ -170,5 +170,25 @@ All files, messages, and replies will also be deleted when their account is dele
     {% endwith %}
   </form>
 
+  <section aria-labelledby="replies-heading">
+    <h2 id="replies-heading" class="headline">{{ gettext('Read Replies') }}</h2>
+  
+    <div id="replies">
+      {% if replies %}
+      <p class="aside">
+        {{ gettext("You have received a reply. To protect your identity in the unlikely event someone learns your codename, please delete all replies when you're done with them. This also lets us know that you are aware of our reply. You can respond by submitting new files and messages above.") }}
+      </p>
+      {% for reply in replies %}
+      <article class="reply">
+        <h3 class="date">{{ timestamp }}</h3>
+        <blockquote>{{ reply.decrypted }}</blockquote>
+      </article>
+      {% endfor %}
+      {% else %}
+      <p id="no-replies" class="explanation">{{ gettext('No Messages') }}</p>
+      {% endif %}
+    </div>
+  </section>
+
 </div>
 {% endblock %}

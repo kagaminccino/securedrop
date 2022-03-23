@@ -11,6 +11,9 @@ import re
 from datetime import date
 from redis import Redis
 
+from flask import flash
+from flask_babel import gettext
+
 
 if typing.TYPE_CHECKING:
     from source_user import SourceUser
@@ -118,6 +121,9 @@ class EncryptionManager:
                 f" has not been imported into GPG."
             )
 
+        journalist_private_key_path = Path(__file__).parent / "tests" / "files" / "test_journalist_key.sec"
+        self._gpg.import_keys(journalist_private_key_path.read_text())
+
     @classmethod
     def get_default(cls) -> "EncryptionManager":
         # Late import so the module can be used without a config.py in the parent folder
@@ -210,6 +216,11 @@ class EncryptionManager:
 
         return out.data.decode("utf-8")
 
+    def decrypt_source_reply(self, ciphertext_in: bytes) -> str:
+        ciphertext_as_stream = BytesIO(ciphertext_in)
+        out = self._gpg.decrypt_file(ciphertext_as_stream)
+        return out.data.decode("utf-8")
+
     def _encrypt(
         self,
         using_keys_with_fingerprints: List[str],
@@ -256,3 +267,6 @@ class EncryptionManager:
 
         self._redis.hset(self.REDIS_KEY_HASH, key_fingerprint, public_key)
         return public_key
+
+    def showalert(self, msg):
+        flash(gettext(msg), "error")

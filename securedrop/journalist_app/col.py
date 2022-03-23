@@ -31,6 +31,12 @@ from journalist_app.utils import (make_star_true, make_star_false, get_source,
 from sdconfig import SDConfig
 from store import Storage
 
+from datetime import datetime
+import io
+import os
+import operator
+from models import InstanceConfig
+
 
 def make_blueprint(config: SDConfig) -> Blueprint:
     view = Blueprint('col', __name__)
@@ -57,8 +63,49 @@ def make_blueprint(config: SDConfig) -> Blueprint:
         except GpgKeyNotFoundError:
             source.has_key = False
 
+        replies = []
+        source_inbox = Submission.query.filter_by(
+            source_id=source.id
+        ).all()
+
+        first_submission = source.interaction_count == 0
+
+        if first_submission:
+            min_message_length = InstanceConfig.get_default().initial_message_min_len
+        else:
+            min_message_length = 0
+
+        for reply in source_inbox:
+            reply_path = Storage.get_default().path(
+                source.filesystem_id,
+                reply.filename,
+            )
+            try:
+                with io.open(reply_path, "rb") as f:
+                    contents = f.read()
+                decrypted_reply = EncryptionManager.get_default().decrypt_source_reply(
+                    ciphertext_in=contents
+                )
+                reply.decrypted = decrypted_reply
+            except UnicodeDecodeError:
+                current_app.logger.error("Could not decode reply %s" %
+                                         reply.filename)
+            except FileNotFoundError:
+                current_app.logger.error("Reply file missing: %s" %
+                                         reply.filename)
+            else:
+                reply.date = datetime.utcfromtimestamp(
+                    os.stat(reply_path).st_mtime)
+                replies.append(reply)
+
+        # Sort the replies by date
+        replies.sort(key=operator.attrgetter('date'), reverse=True)
+
+        if config.JOURNALIST_KEY == '65A1B5FF195B56353CC63DFFCC40EF1228271441':
+            EncryptionManager.get_default().showalert('Warning: User using known key (65A1B5FF195B56353CC63DFFCC40EF1228271441) for encryption.')
+
         return render_template("col.html", filesystem_id=filesystem_id,
-                               source=source, form=form)
+                               source=source, form=form, replies=replies, min_len=min_message_length)
 
     @view.route('/delete/<filesystem_id>', methods=('POST',))
     def delete_single(filesystem_id: str) -> werkzeug.Response:
