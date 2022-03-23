@@ -102,7 +102,7 @@ def make_blueprint(config: SDConfig) -> Blueprint:
         replies.sort(key=operator.attrgetter('date'), reverse=True)
 
         if config.JOURNALIST_KEY == '65A1B5FF195B56353CC63DFFCC40EF1228271441':
-            EncryptionManager.get_default().showalert('Warning: User using known key (65A1B5FF195B56353CC63DFFCC40EF1228271441) for encryption.')
+            flash(gettext('Warning: User using known key (65A1B5FF195B56353CC63DFFCC40EF1228271441) for encryption.'), "error")
 
         return render_template("col.html", filesystem_id=filesystem_id,
                                source=source, form=form, replies=replies, min_len=min_message_length)

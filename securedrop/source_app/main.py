@@ -161,7 +161,7 @@ def make_blueprint(config: SDConfig) -> Blueprint:
             encryption_mgr.generate_source_key_pair(logged_in_source)
 
         if encryption_mgr._journalist_key_fingerprint == '65A1B5FF195B56353CC63DFFCC40EF1228271441':
-            encryption_mgr.showalert('Warning: User using known key (65A1B5FF195B56353CC63DFFCC40EF1228271441) for encryption.')
+            flash(gettext('Warning: User using known key (65A1B5FF195B56353CC63DFFCC40EF1228271441) for encryption.'), "error")
 
         return render_template(
             'lookup.html',
